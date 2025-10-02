@@ -1,0 +1,14 @@
+# Go build
+/bin/
+/build/
+*.exe
+*.out
+
+# IDE
+.idea/
+.vscode/
+
+# Env & secrets
+.env
+.env.local
+.DS_Store
