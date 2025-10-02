@@ -67,7 +67,6 @@ func main() {
 	r.Use(chimw.Compress(5))
 	r.Use(chimw.Timeout(reqTimeout))
 
-	// Panic → Discord (kalau webhook diset)
 	if discordWebhook != "" {
 		r.Use(mw.RecoverToDiscord(discordWebhook))
 	} else {
@@ -80,6 +79,12 @@ func main() {
 
 	// Limit body size
 	r.Use(func(next http.Handler) http.Handler { return http.MaxBytesHandler(next, maxBodyBytes) })
+
+	// Health endpoint (untuk probes)
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
 
 	// Auth + route
 	r.Group(func(pr chi.Router) {

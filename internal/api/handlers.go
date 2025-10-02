@@ -3,6 +3,7 @@
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 
@@ -24,12 +25,19 @@ type walletResp struct {
 }
 
 type getBalanceResp struct {
-	Results []walletResp `json:"results"`
-	Cached  bool         `json:"cached_any"`
+	Results    []walletResp `json:"results"`
+	Cached     bool         `json:"cached_any"`
+	APIVersion string       `json:"api_version"`
 }
 
 func GetBalanceHandler(cli *rpc.Client, c *cache.Cache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Read version from env (default v1) — no change to function signature.
+		version := os.Getenv("VERSION")
+		if version == "" {
+			version = "v1"
+		}
+
 		var req getBalanceReq
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
@@ -102,6 +110,13 @@ func GetBalanceHandler(cli *rpc.Client, c *cache.Cache) http.HandlerFunc {
 		sort.Slice(results, func(i, j int) bool { return results[i].Wallet < results[j].Wallet })
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(getBalanceResp{Results: results, Cached: cachedAny})
+		w.Header().Set("X-Version", version)
+
+		resp := getBalanceResp{
+			Results:    results,
+			Cached:     cachedAny,
+			APIVersion: version,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
 	}
 }
